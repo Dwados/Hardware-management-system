@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import InventoryView from './InventoryView';
 import SalesView from './SalesView';
 import PurchasesView from './PurchasesView';
@@ -6,11 +6,13 @@ import DebtorsCreditorsLedgerView from './DebtorsCreditorsLedgerView';
 import StockTakeView from './StockTakeView';
 import ReportsView from './ReportsView';
 import ReceiptBookView from './ReceiptBookView';
+import { fetchProducts } from './api';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [userRole, setUserRole] = useState('ADMIN');
 
+  // Dynamic state for receipts, sales, and products
   const [receipts, setReceipts] = useState([
     {
       id: 'REC-849102',
@@ -22,18 +24,29 @@ export default function App() {
     {
       id: 'REC-391045',
       timestamp: new Date(Date.now() - 7200000).toISOString(),
-      payment_method: 'Mobile Money (MTN)',
+      payment_method: 'MTN Mobile Money',
       total: 160000,
       items: [{ name: 'PVC Pipe 2 inch (3m)', quantity: 5, selling_price: 32000 }]
     }
   ]);
 
+  const [productsList, setProductsList] = useState([]);
+
+  useEffect(() => {
+    fetchProducts().then(prods => {
+      if (prods && prods.length > 0) {
+        setProductsList(prods);
+      }
+    });
+  }, []);
+
+  // When a sale is completed, add to dynamic receipts list
   const handleSaleComplete = (newReceipt) => {
-    setReceipts([newReceipt, ...receipts]);
+    setReceipts(prev => [newReceipt, ...prev]);
   };
 
   // Keyboard shortcut listener ('/' hotkey to focus global search)
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
         e.preventDefault();
@@ -53,6 +66,22 @@ export default function App() {
   };
 
   const currentNav = roleNavMap[userRole] || roleNavMap.VIEWER;
+
+  // Compute dynamic dashboard metrics
+  const totalSalesRevenue = receipts.reduce((sum, r) => sum + (r.total || 0), 0);
+  const totalItemsSold = receipts.reduce((sum, r) => sum + (r.items ? r.items.reduce((iSum, item) => iSum + (item.quantity || 1), 0) : 0), 0);
+
+  // Compute top sold products dynamically from receipts
+  const productSalesMap = {};
+  receipts.forEach(r => {
+    (r.items || []).forEach(item => {
+      const name = item.name || 'Unknown Item';
+      productSalesMap[name] = (productSalesMap[name] || 0) + (item.quantity || 1);
+    });
+  });
+  const topSellers = Object.entries(productSalesMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -158,7 +187,7 @@ export default function App() {
           ) : (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-800">{activeTab}</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Operational Dashboard</h1>
                 <span className="text-xs bg-slate-200 text-slate-700 font-semibold px-2.5 py-1 rounded">
                   Active Role: {userRole}
                 </span>
@@ -167,73 +196,94 @@ export default function App() {
               {/* Key Metrics Dashboard Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Today's Sales</span>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">UGX 4,850,000</p>
-                  <span className="text-xs text-green-600 font-medium">+12% vs yesterday</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Today's Sales Revenue</span>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">UGX {totalSalesRevenue.toLocaleString()}</p>
+                  <span className="text-xs text-green-600 font-medium">{receipts.length} transactions processed</span>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Products</span>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">142</p>
-                  <span className="text-xs text-gray-500 font-medium">12 Categories</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Items Sold</span>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalItemsSold}</p>
+                  <span className="text-xs text-gray-500 font-medium">Total units dispatched</span>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Low Stock Alerts</span>
-                  <p className="text-2xl font-bold text-amber-600 mt-1">5</p>
-                  <span className="text-xs text-amber-600 font-medium">Requires reorder</span>
+                  <p className="text-2xl font-bold text-amber-600 mt-1">1</p>
+                  <span className="text-xs text-amber-600 font-medium">PVC Pipe 2" low</span>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Customers Owe Us</span>
                   <p className="text-2xl font-bold text-red-600 mt-1">UGX 1,650,000</p>
-                  <span className="text-xs text-red-500 font-medium">3 Unpaid credit sales</span>
+                  <span className="text-xs text-red-500 font-medium">2 Active debtor accounts</span>
                 </div>
               </div>
 
               {/* Recent Operations & Best Sellers */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                  <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Recent Sales</h2>
+                  <div className="flex justify-between items-center mb-3">
+                    <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Recent Sales & Transactions</h2>
+                    <button 
+                      onClick={() => setActiveTab('Receipt Book')}
+                      className="text-xs text-amber-600 hover:text-amber-700 font-semibold"
+                    >
+                      View All →
+                    </button>
+                  </div>
                   <table className="w-full text-sm text-left">
                     <thead className="bg-gray-50 text-gray-500 text-xs border-b">
                       <tr>
-                        <th className="py-2 px-3">Item</th>
-                        <th className="py-2 px-3">Qty</th>
+                        <th className="py-2 px-3">Receipt #</th>
+                        <th className="py-2 px-3">Items</th>
                         <th className="py-2 px-3">Amount (UGX)</th>
                         <th className="py-2 px-3">Payment</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      <tr>
-                        <td className="py-2 px-3 font-medium">Cement 50kg</td>
-                        <td className="py-2 px-3">10</td>
-                        <td className="py-2 px-3 font-semibold">UGX 450,000</td>
-                        <td className="py-2 px-3"><span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold">Cash</span></td>
-                      </tr>
-                      <tr>
-                        <td className="py-2 px-3 font-medium">PVC Pipe 2"</td>
-                        <td className="py-2 px-3">5</td>
-                        <td className="py-2 px-3 font-semibold">UGX 160,000</td>
-                        <td className="py-2 px-3"><span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded font-bold">MTN MoMo</span></td>
-                      </tr>
+                      {receipts.slice(0, 5).map(r => {
+                        const firstItem = r.items && r.items.length > 0 ? r.items[0].name : (r.type_label || 'Sale');
+                        const itemCount = r.items ? r.items.reduce((s, i) => s + (i.quantity || 1), 0) : 1;
+                        return (
+                          <tr key={r.id} className="hover:bg-gray-50">
+                            <td className="py-2 px-3 font-mono font-bold text-xs text-gray-900">{r.id}</td>
+                            <td className="py-2 px-3 font-medium text-xs text-gray-800">
+                              {firstItem} {r.items && r.items.length > 1 ? `(+${r.items.length - 1} more)` : `(${itemCount} pcs)`}
+                            </td>
+                            <td className="py-2 px-3 font-semibold text-xs text-gray-900">UGX {(r.total || 0).toLocaleString()}</td>
+                            <td className="py-2 px-3">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                (r.payment_method || '').includes('MTN') ? 'bg-yellow-100 text-yellow-800' :
+                                (r.payment_method || '').includes('Airtel') ? 'bg-red-100 text-red-800' :
+                                (r.payment_method || '') === 'Cash' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {r.payment_method}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
 
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                  <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Top 5 Best Sellers</h2>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                      <span className="font-medium text-gray-800">1. Cement 50kg</span>
-                      <span className="text-gray-500 font-semibold">145 sold</span>
-                    </li>
-                    <li className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                      <span className="font-medium text-gray-800">2. Iron Sheet 30G</span>
-                      <span className="text-gray-500 font-semibold">89 sold</span>
-                    </li>
-                    <li className="flex justify-between items-center py-1.5 border-b border-gray-100">
-                      <span className="font-medium text-gray-800">3. PVC Pipe 2"</span>
-                      <span className="text-gray-500 font-semibold">64 sold</span>
-                    </li>
-                  </ul>
+                  <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Live Best Sellers</h2>
+                  {topSellers.length === 0 ? (
+                    <p className="text-xs text-gray-400 py-6 text-center">No sales recorded yet.</p>
+                  ) : (
+                    <ul className="space-y-2 text-sm">
+                      {topSellers.map(([name, qty], index) => (
+                        <li key={name} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                          <span className="font-medium text-gray-800 text-xs">
+                            <span className="text-amber-600 font-bold mr-1.5">{index + 1}.</span>
+                            {name}
+                          </span>
+                          <span className="text-xs bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded">
+                            {qty} units sold
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </div>
             </div>
