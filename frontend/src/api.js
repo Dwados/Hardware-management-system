@@ -25,6 +25,18 @@ export async function createProductApi(product) {
   }
 }
 
+export async function deleteProductApi(productId) {
+  try {
+    const res = await fetch(`${API_BASE}/products/${productId}`, {
+      method: 'DELETE'
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('Backend offline, deleted locally:', err);
+    return null;
+  }
+}
+
 export async function processSaleApi(sale) {
   try {
     const res = await fetch(`${API_BASE}/sales/`, {

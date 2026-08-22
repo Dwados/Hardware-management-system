@@ -8,9 +8,9 @@ router = APIRouter(prefix="/products", tags=["Products"])
 
 # In-memory fallback (used when Supabase is not configured)
 PRODUCTS_DB = [
-    {"id": "prod-1", "sku": "CEM-001", "barcode": "8901234567890", "name": "Portland Cement 50kg", "category_id": "Building", "supplier_id": "Supplier A", "storage_location_id": "A1-S1-B1", "unit": "bag", "cost_price": 9.50, "selling_price": 12.00, "stock_quantity": 120, "minimum_stock": 20, "image_url": "", "active": True},
-    {"id": "prod-2", "sku": "PVC-002", "barcode": "8901234567891", "name": "PVC Pipe 2 inch (3m)", "category_id": "Plumbing", "supplier_id": "Supplier B", "storage_location_id": "A2-S3-B1", "unit": "pcs", "cost_price": 5.00, "selling_price": 8.50, "stock_quantity": 4, "minimum_stock": 10, "image_url": "", "active": True},
-    {"id": "prod-3", "sku": "NAL-003", "barcode": "8901234567892", "name": "Steel Nails 3 inch (kg)", "category_id": "Hardware", "supplier_id": "Supplier C", "storage_location_id": "A3-S1-B2", "unit": "kg", "cost_price": 1.50, "selling_price": 2.50, "stock_quantity": 0, "minimum_stock": 15, "image_url": "", "active": True}
+    {"id": "prod-1", "sku": "CEM-001", "barcode": "8901234567890", "name": "Portland Cement 50kg (Tororo/Hima)", "category_id": "Building", "supplier_id": "Tororo Cement Ltd", "storage_location_id": "A1-S1-B1", "unit": "bag", "cost_price": 36000, "selling_price": 45000, "stock_quantity": 120, "minimum_stock": 20, "image_url": "", "active": True},
+    {"id": "prod-2", "sku": "PVC-002", "barcode": "8901234567891", "name": "PVC Pipe 2 inch (3m)", "category_id": "Plumbing", "supplier_id": "Roofings Ltd", "storage_location_id": "A2-S3-B1", "unit": "pcs", "cost_price": 24000, "selling_price": 32000, "stock_quantity": 4, "minimum_stock": 10, "image_url": "", "active": True},
+    {"id": "prod-3", "sku": "NAL-003", "barcode": "8901234567892", "name": "Steel Nails 3 inch (kg)", "category_id": "Hardware", "supplier_id": "Hardware Supplies Uganda", "storage_location_id": "A3-S1-B2", "unit": "kg", "cost_price": 6000, "selling_price": 8500, "stock_quantity": 25, "minimum_stock": 15, "image_url": "", "active": True}
 ]
 
 STOCK_MOVEMENTS_DB = []
@@ -30,7 +30,7 @@ def get_products(search: Optional[str] = None, category: Optional[str] = None):
             print(f"Supabase read failed, falling back to in-memory: {e}")
 
     # Fallback to in-memory
-    results = PRODUCTS_DB
+    results = [p for p in PRODUCTS_DB if p.get("active", True)]
     if search:
         s = search.lower()
         results = [p for p in results if s in p["name"].lower() or s in p["sku"].lower() or (p.get("barcode") and s in p["barcode"])]
@@ -72,6 +72,22 @@ def update_product(product_id: str, product_update: ProductUpdate):
             return p
     raise HTTPException(status_code=404, detail="Product not found")
 
+@router.delete("/{product_id}")
+def delete_product(product_id: str):
+    if supabase:
+        try:
+            # Soft delete in Supabase
+            supabase.table("products").update({"active": False}).eq("id", product_id).execute()
+            return {"message": "Product deleted successfully (deactivated)"}
+        except Exception as e:
+            print(f"Supabase delete failed, soft deleting in-memory: {e}")
+
+    for p in PRODUCTS_DB:
+        if p["id"] == product_id:
+            p["active"] = False
+            return {"message": "Product deleted successfully"}
+    raise HTTPException(status_code=404, detail="Product not found")
+
 @router.post("/{product_id}/adjust-stock")
 def adjust_stock(product_id: str, adj: StockAdjustmentCreate):
     movement = {
@@ -84,7 +100,6 @@ def adjust_stock(product_id: str, adj: StockAdjustmentCreate):
 
     if supabase:
         try:
-            # Atomic increment via RPC (fallback to manual if RPC not set up)
             result = supabase.table("products").select("stock_quantity").eq("id", product_id).execute()
             if result.data:
                 current_qty = result.data[0]["stock_quantity"]

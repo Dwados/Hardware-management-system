@@ -1,61 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { fetchProducts, createProductApi } from './api';
+import React, { useState } from 'react';
+import { createProductApi, deleteProductApi } from './api';
 
-const INITIAL_PRODUCTS = [
-  {
-    id: 'prod-1',
-    sku: 'CEM-001',
-    barcode: '8901234567890',
-    name: 'Portland Cement 50kg (Tororo/Hima)',
-    category: 'Building',
-    cost_price: 36000,
-    selling_price: 45000,
-    stock_quantity: 120,
-    minimum_stock: 20,
-    location: 'A1-S1-B1',
-    supplier: 'Tororo Cement Ltd'
-  },
-  {
-    id: 'prod-2',
-    sku: 'PVC-002',
-    barcode: '8901234567891',
-    name: 'PVC Pipe 2 inch (3m)',
-    category: 'Plumbing',
-    cost_price: 24000,
-    selling_price: 32000,
-    stock_quantity: 4,
-    minimum_stock: 10,
-    location: 'A2-S3-B1',
-    supplier: 'Roofings Ltd'
-  },
-  {
-    id: 'prod-3',
-    sku: 'NAL-003',
-    barcode: '8901234567892',
-    name: 'Steel Nails 3 inch (kg)',
-    category: 'Hardware',
-    cost_price: 6000,
-    selling_price: 8500,
-    stock_quantity: 25,
-    minimum_stock: 15,
-    location: 'A3-S1-B2',
-    supplier: 'Hardware Supplies Uganda'
-  }
-];
-
-export default function InventoryView({ userRole }) {
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+export default function InventoryView({ userRole, products, onAddProduct, onDeleteProduct, onAdjustStock }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAdjustModal, setShowAdjustModal] = useState(null);
-
-  useEffect(() => {
-    fetchProducts().then(apiProds => {
-      if (apiProds && apiProds.length > 0) {
-        setProducts(apiProds);
-      }
-    });
-  }, []);
+  const [confirmDeleteModal, setConfirmDeleteModal] = useState(null);
 
   const [newProduct, setNewProduct] = useState({
     name: '', sku: '', barcode: '', category: 'Building', cost_price: '', selling_price: '', stock_quantity: '', minimum_stock: 5, location: 'A1-S1-B1'
@@ -64,9 +14,9 @@ export default function InventoryView({ userRole }) {
   const [adjustQty, setAdjustQty] = useState('');
   const [adjustReason, setAdjustReason] = useState('DAMAGE');
 
-  const filteredProducts = products.filter(p => 
+  const filteredProducts = (products || []).filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.sku.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (p.barcode && p.barcode.includes(searchTerm))
   );
 
@@ -87,22 +37,29 @@ export default function InventoryView({ userRole }) {
       minimum_stock: parseInt(newProduct.minimum_stock) || 5
     };
     
-    setProducts([...products, created]);
+    if (onAddProduct) {
+      onAddProduct(created);
+    }
     await createProductApi(created);
 
     setShowAddModal(false);
     setNewProduct({ name: '', sku: '', barcode: '', category: 'Building', cost_price: '', selling_price: '', stock_quantity: '', minimum_stock: 5, location: 'A1-S1-B1' });
   };
 
+  const handleDeleteProduct = async (prodId) => {
+    if (onDeleteProduct) {
+      onDeleteProduct(prodId);
+    }
+    await deleteProductApi(prodId);
+    setConfirmDeleteModal(null);
+  };
+
   const handleAdjustStock = (e) => {
     e.preventDefault();
     const change = parseInt(adjustQty) || 0;
-    setProducts(products.map(p => {
-      if (p.id === showAdjustModal.id) {
-        return { ...p, stock_quantity: Math.max(0, p.stock_quantity + change) };
-      }
-      return p;
-    }));
+    if (onAdjustStock && showAdjustModal) {
+      onAdjustStock(showAdjustModal.id, change);
+    }
     setShowAdjustModal(null);
     setAdjustQty('');
   };
@@ -148,30 +105,47 @@ export default function InventoryView({ userRole }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredProducts.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50">
-                  <td className="py-3 px-4">
-                    <div className="font-semibold text-gray-900">{p.name}</div>
-                    <div className="text-xs text-gray-400 font-mono">SKU: {p.sku} | Barcode: {p.barcode || 'N/A'}</div>
+              {filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="py-8 text-center text-gray-400 text-xs">
+                    No products found. Add one above!
                   </td>
-                  <td className="py-3 px-4 text-gray-600">{p.category_id || p.category}</td>
-                  <td className="py-3 px-4 text-gray-600">UGX {(p.cost_price || 0).toLocaleString()}</td>
-                  <td className="py-3 px-4 font-bold text-gray-900">UGX {(p.selling_price || 0).toLocaleString()}</td>
-                  <td className="py-3 px-4 font-semibold">{p.stock_quantity} {p.unit || 'pcs'}</td>
-                  <td className="py-3 px-4 font-mono text-xs text-gray-500">{p.storage_location_id || p.location}</td>
-                  <td className="py-3 px-4">{getStockBadge(p.stock_quantity, p.minimum_stock)}</td>
-                  {userRole !== 'VIEWER' && (
-                    <td className="py-3 px-4 text-right space-x-2">
-                      <button 
-                        onClick={() => setShowAdjustModal(p)}
-                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded"
-                      >
-                        Adjust
-                      </button>
-                    </td>
-                  )}
                 </tr>
-              ))}
+              ) : (
+                filteredProducts.map(p => (
+                  <tr key={p.id} className="hover:bg-gray-50">
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-gray-900">{p.name}</div>
+                      <div className="text-xs text-gray-400 font-mono">SKU: {p.sku} | Barcode: {p.barcode || 'N/A'}</div>
+                    </td>
+                    <td className="py-3 px-4 text-gray-600">{p.category_id || p.category}</td>
+                    <td className="py-3 px-4 text-gray-600">UGX {(p.cost_price || 0).toLocaleString()}</td>
+                    <td className="py-3 px-4 font-bold text-gray-900">UGX {(p.selling_price || 0).toLocaleString()}</td>
+                    <td className="py-3 px-4 font-semibold">{p.stock_quantity} {p.unit || 'pcs'}</td>
+                    <td className="py-3 px-4 font-mono text-xs text-gray-500">{p.storage_location_id || p.location}</td>
+                    <td className="py-3 px-4">{getStockBadge(p.stock_quantity, p.minimum_stock)}</td>
+                    {userRole !== 'VIEWER' && (
+                      <td className="py-3 px-4 text-right space-x-1">
+                        <button 
+                          onClick={() => setShowAdjustModal(p)}
+                          className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded"
+                        >
+                          Adjust
+                        </button>
+                        {(userRole === 'ADMIN' || userRole === 'STOREKEEPER') && (
+                          <button 
+                            onClick={() => setConfirmDeleteModal(p)}
+                            className="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-medium px-2 py-1 rounded border border-red-200"
+                            title="Delete / Remove Product"
+                          >
+                            🗑 Delete
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -219,9 +193,37 @@ export default function InventoryView({ userRole }) {
               </div>
               <div className="flex justify-end space-x-2 pt-3 border-t">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-slate-900 rounded">Save Product</button>
+                <button type="submit" className="px-4 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-slate-900 rounded">Save & Add to Sales</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-sm w-full p-5 space-y-3 shadow-xl">
+            <h3 className="text-sm font-bold text-red-600 border-b pb-2">Delete Product</h3>
+            <p className="text-xs text-gray-600">
+              Are you sure you want to remove <strong>{confirmDeleteModal.name}</strong> ({confirmDeleteModal.sku})? It will no longer appear in the POS sales screen or inventory list.
+            </p>
+            <div className="flex justify-end space-x-2 pt-3 border-t">
+              <button 
+                type="button" 
+                onClick={() => setConfirmDeleteModal(null)} 
+                className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handleDeleteProduct(confirmDeleteModal.id)} 
+                className="px-4 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded shadow-sm"
+              >
+                Yes, Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

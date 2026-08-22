@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { processSaleApi } from './api';
 
-const MOCK_PRODUCTS = [
-  { id: 'prod-1', sku: 'CEM-001', barcode: '8901234567890', name: 'Portland Cement 50kg', selling_price: 45000, stock_quantity: 120 },
-  { id: 'prod-2', sku: 'PVC-002', barcode: '8901234567891', name: 'PVC Pipe 2 inch (3m)', selling_price: 32000, stock_quantity: 4 },
-  { id: 'prod-3', sku: 'NAL-003', barcode: '8901234567892', name: 'Steel Nails 3 inch (kg)', selling_price: 8500, stock_quantity: 25 }
-];
-
-export default function SalesView({ onSaleComplete }) {
+export default function SalesView({ products, onSaleComplete }) {
   const [cart, setCart] = useState([]);
   const [search, setSearch] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Cash');
@@ -50,10 +44,12 @@ export default function SalesView({ onSaleComplete }) {
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
-  const filteredProducts = MOCK_PRODUCTS.filter(p =>
+  const activeProducts = products || [];
+
+  const filteredProducts = activeProducts.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.sku.toLowerCase().includes(search.toLowerCase()) ||
-    p.barcode.includes(search)
+    (p.barcode && p.barcode.includes(search))
   );
 
   const addToCart = (product) => {
@@ -219,29 +215,35 @@ export default function SalesView({ onSaleComplete }) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {filteredProducts.map(p => (
-            <div 
-              key={p.id} 
-              onClick={() => addToCart(p)}
-              className={`p-3 bg-white rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:border-amber-500 transition ${p.stock_quantity === 0 ? 'opacity-50 pointer-events-none' : ''}`}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-semibold text-gray-800 text-sm">{p.name}</h4>
-                  <span className="text-xs text-gray-400 font-mono">{p.sku}</span>
-                </div>
-                <span className="font-bold text-amber-600">UGX {p.selling_price.toLocaleString()}</span>
-              </div>
-              <div className="mt-2 flex justify-between items-center text-xs">
-                <span className={`font-semibold ${p.stock_quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  Stock: {p.stock_quantity}
-                </span>
-                <button className="bg-amber-100 text-amber-800 font-medium px-2 py-0.5 rounded hover:bg-amber-200">
-                  + Add
-                </button>
-              </div>
+          {filteredProducts.length === 0 ? (
+            <div className="col-span-2 bg-white p-8 rounded-lg border text-center text-gray-400 text-sm">
+              No products found matching "{search}".
             </div>
-          ))}
+          ) : (
+            filteredProducts.map(p => (
+              <div 
+                key={p.id} 
+                onClick={() => addToCart(p)}
+                className={`p-3 bg-white rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:border-amber-500 transition ${p.stock_quantity === 0 ? 'opacity-50 pointer-events-none' : ''}`}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-semibold text-gray-800 text-sm">{p.name}</h4>
+                    <span className="text-xs text-gray-400 font-mono">{p.sku}</span>
+                  </div>
+                  <span className="font-bold text-amber-600">UGX {(p.selling_price || 0).toLocaleString()}</span>
+                </div>
+                <div className="mt-2 flex justify-between items-center text-xs">
+                  <span className={`font-semibold ${p.stock_quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    Stock: {p.stock_quantity} {p.unit || 'pcs'}
+                  </span>
+                  <button className="bg-amber-100 text-amber-800 font-medium px-2 py-0.5 rounded hover:bg-amber-200">
+                    + Add
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -258,7 +260,7 @@ export default function SalesView({ onSaleComplete }) {
                 <div key={item.id} className="flex justify-between items-center bg-gray-50 p-2 rounded text-sm border border-gray-100">
                   <div>
                     <div className="font-medium text-gray-800 text-xs">{item.name}</div>
-                    <div className="text-xs text-gray-500">UGX {item.selling_price.toLocaleString()} each</div>
+                    <div className="text-xs text-gray-500">UGX {(item.selling_price || 0).toLocaleString()} each</div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <button onClick={() => updateQuantity(item.id, -1)} className="px-2 py-0.5 bg-gray-200 rounded font-bold text-xs">-</button>

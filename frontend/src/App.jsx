@@ -8,18 +8,63 @@ import ReportsView from './ReportsView';
 import ReceiptBookView from './ReceiptBookView';
 import { fetchProducts } from './api';
 
+const DEFAULT_INITIAL_PRODUCTS = [
+  {
+    id: 'prod-1',
+    sku: 'CEM-001',
+    barcode: '8901234567890',
+    name: 'Portland Cement 50kg (Tororo/Hima)',
+    category: 'Building',
+    cost_price: 36000,
+    selling_price: 45000,
+    stock_quantity: 120,
+    minimum_stock: 20,
+    location: 'A1-S1-B1',
+    supplier: 'Tororo Cement Ltd'
+  },
+  {
+    id: 'prod-2',
+    sku: 'PVC-002',
+    barcode: '8901234567891',
+    name: 'PVC Pipe 2 inch (3m)',
+    category: 'Plumbing',
+    cost_price: 24000,
+    selling_price: 32000,
+    stock_quantity: 4,
+    minimum_stock: 10,
+    location: 'A2-S3-B1',
+    supplier: 'Roofings Ltd'
+  },
+  {
+    id: 'prod-3',
+    sku: 'NAL-003',
+    barcode: '8901234567892',
+    name: 'Steel Nails 3 inch (kg)',
+    category: 'Hardware',
+    cost_price: 6000,
+    selling_price: 8500,
+    stock_quantity: 25,
+    minimum_stock: 15,
+    location: 'A3-S1-B2',
+    supplier: 'Hardware Supplies Uganda'
+  }
+];
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [userRole, setUserRole] = useState('ADMIN');
 
-  // Dynamic state for receipts, sales, and products
+  // Dynamic shared products list
+  const [productsList, setProductsList] = useState(DEFAULT_INITIAL_PRODUCTS);
+
+  // Dynamic state for receipts & sales
   const [receipts, setReceipts] = useState([
     {
       id: 'REC-849102',
       timestamp: new Date(Date.now() - 3600000).toISOString(),
       payment_method: 'Cash',
       total: 450000,
-      items: [{ name: 'Portland Cement 50kg', quantity: 10, selling_price: 45000 }]
+      items: [{ name: 'Portland Cement 50kg (Tororo/Hima)', quantity: 10, selling_price: 45000 }]
     },
     {
       id: 'REC-391045',
@@ -30,8 +75,6 @@ export default function App() {
     }
   ]);
 
-  const [productsList, setProductsList] = useState([]);
-
   useEffect(() => {
     fetchProducts().then(prods => {
       if (prods && prods.length > 0) {
@@ -40,9 +83,40 @@ export default function App() {
     });
   }, []);
 
-  // When a sale is completed, add to dynamic receipts list
+  // Shared state handlers for products
+  const handleAddProduct = (newProd) => {
+    setProductsList(prev => [...prev, newProd]);
+  };
+
+  const handleDeleteProduct = (prodId) => {
+    setProductsList(prev => prev.filter(p => p.id !== prodId));
+  };
+
+  const handleAdjustStock = (prodId, delta) => {
+    setProductsList(prev => prev.map(p => {
+      if (p.id === prodId) {
+        return { ...p, stock_quantity: Math.max(0, (p.stock_quantity || 0) + delta) };
+      }
+      return p;
+    }));
+  };
+
+  // When a sale is completed:
+  // 1. Add to dynamic receipts list
+  // 2. Automatically deduct stock from productsList in real-time
   const handleSaleComplete = (newReceipt) => {
     setReceipts(prev => [newReceipt, ...prev]);
+
+    if (newReceipt.items && newReceipt.items.length > 0) {
+      setProductsList(prev => prev.map(p => {
+        const soldItem = newReceipt.items.find(i => i.id === p.id || i.product_id === p.id || i.name === p.name);
+        if (soldItem) {
+          const qtySold = soldItem.quantity || 1;
+          return { ...p, stock_quantity: Math.max(0, (p.stock_quantity || 0) - qtySold) };
+        }
+        return p;
+      }));
+    }
   };
 
   // Keyboard shortcut listener ('/' hotkey to focus global search)
@@ -70,6 +144,7 @@ export default function App() {
   // Compute dynamic dashboard metrics
   const totalSalesRevenue = receipts.reduce((sum, r) => sum + (r.total || 0), 0);
   const totalItemsSold = receipts.reduce((sum, r) => sum + (r.items ? r.items.reduce((iSum, item) => iSum + (item.quantity || 1), 0) : 0), 0);
+  const lowStockCount = productsList.filter(p => (p.stock_quantity || 0) <= (p.minimum_stock || 5)).length;
 
   // Compute top sold products dynamically from receipts
   const productSalesMap = {};
@@ -163,7 +238,10 @@ export default function App() {
         {/* Content Body */}
         <main className="flex-1 overflow-y-auto p-6 bg-slate-50">
           {activeTab === 'Sales' ? (
-            <SalesView onSaleComplete={handleSaleComplete} />
+            <SalesView 
+              products={productsList} 
+              onSaleComplete={handleSaleComplete} 
+            />
           ) : activeTab === 'Inventory' ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -172,7 +250,13 @@ export default function App() {
                   Active Role: {userRole}
                 </span>
               </div>
-              <InventoryView userRole={userRole} />
+              <InventoryView 
+                userRole={userRole} 
+                products={productsList}
+                onAddProduct={handleAddProduct}
+                onDeleteProduct={handleDeleteProduct}
+                onAdjustStock={handleAdjustStock}
+              />
             </div>
           ) : activeTab === 'Purchases' ? (
             <PurchasesView />
@@ -201,14 +285,14 @@ export default function App() {
                   <span className="text-xs text-green-600 font-medium">{receipts.length} transactions processed</span>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Items Sold</span>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{totalItemsSold}</p>
-                  <span className="text-xs text-gray-500 font-medium">Total units dispatched</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Products</span>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{productsList.length}</p>
+                  <span className="text-xs text-gray-500 font-medium">Active Catalog Items</span>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Low Stock Alerts</span>
-                  <p className="text-2xl font-bold text-amber-600 mt-1">1</p>
-                  <span className="text-xs text-amber-600 font-medium">PVC Pipe 2" low</span>
+                  <p className={`text-2xl font-bold mt-1 ${lowStockCount > 0 ? 'text-amber-600' : 'text-green-600'}`}>{lowStockCount}</p>
+                  <span className="text-xs text-amber-600 font-medium">Requires reorder</span>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Customers Owe Us</span>
