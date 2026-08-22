@@ -1,45 +1,45 @@
 import React, { useState } from 'react';
 
 const MOCK_SALES_HISTORY = [
-  { id: 'REC-849102', date: '2026-08-20', revenue: 120.00, profit: 25.00, itemsCount: 10 },
-  { id: 'REC-391045', date: '2026-08-20', revenue: 42.50, profit: 17.50, itemsCount: 5 },
-  { id: 'REC-110293', date: '2026-08-19', revenue: 210.00, profit: 65.00, itemsCount: 18 },
-  { id: 'REC-903124', date: '2026-08-18', revenue: 340.00, profit: 95.00, itemsCount: 22 },
-  { id: 'REC-551029', date: '2026-08-14', revenue: 180.00, profit: 45.00, itemsCount: 12 },
-  { id: 'REC-441920', date: '2026-08-01', revenue: 800.00, profit: 240.00, itemsCount: 65 }
+  { id: 'REC-849102', date: '2026-08-20', revenue: 450000, profit: 90000, itemsCount: 10 },
+  { id: 'REC-391045', date: '2026-08-20', revenue: 160000, profit: 40000, itemsCount: 5 },
+  { id: 'REC-110293', date: '2026-08-19', revenue: 780000, profit: 195000, itemsCount: 18 },
+  { id: 'REC-903124', date: '2026-08-18', revenue: 1250000, profit: 320000, itemsCount: 22 },
+  { id: 'REC-551029', date: '2026-08-14', revenue: 650000, profit: 140000, itemsCount: 12 },
+  { id: 'REC-441920', date: '2026-08-01', revenue: 3200000, profit: 850000, itemsCount: 65 }
 ];
 
 const MOCK_PURCHASES_HISTORY = [
-  { id: 'PUR-101', date: '2026-08-20', supplier: 'Plumbing World', cost: 150.00 },
-  { id: 'PUR-098', date: '2026-08-18', supplier: 'BuildPro Supplies', cost: 450.00 },
-  { id: 'PUR-092', date: '2026-08-05', supplier: 'BuildPro Supplies', cost: 600.00 }
+  { id: 'PUR-101', date: '2026-08-20', supplier: 'Plumbing World Uganda', cost: 550000 },
+  { id: 'PUR-098', date: '2026-08-18', supplier: 'Roofings Ltd', cost: 1650000 },
+  { id: 'PUR-092', date: '2026-08-05', supplier: 'Tororo Cement Ltd', cost: 2200000 }
 ];
 
 function exportToCSV(sales, purchases, period) {
   const salesRows = [
-    ['--- SALES ---'],
-    ['Receipt #', 'Date', 'Revenue', 'Gross Profit', 'Items Sold'],
-    ...sales.map(s => [s.id, s.date, s.revenue.toFixed(2), s.profit.toFixed(2), s.itemsCount])
+    ['--- SALES (UGX) ---'],
+    ['Receipt #', 'Date', 'Revenue (UGX)', 'Gross Profit (UGX)', 'Items Sold'],
+    ...sales.map(s => [s.id, s.date, s.revenue, s.profit, s.itemsCount])
   ];
   const purchaseRows = [
     [],
-    ['--- STOCK EXPENSES ---'],
-    ['PO #', 'Date', 'Supplier', 'Amount'],
-    ...purchases.map(p => [p.id, p.date, p.supplier, p.cost.toFixed(2)])
+    ['--- STOCK EXPENSES (UGX) ---'],
+    ['PO #', 'Date', 'Supplier', 'Amount (UGX)'],
+    ...purchases.map(p => [p.id, p.date, p.supplier, p.cost])
   ];
   const totalRevenue = sales.reduce((sum, s) => sum + s.revenue, 0);
   const totalExpenses = purchases.reduce((sum, p) => sum + p.cost, 0);
   const totalProfit = sales.reduce((sum, s) => sum + s.profit, 0);
   const summaryRows = [
     [],
-    ['--- SUMMARY ---'],
-    ['Total Revenue', totalRevenue.toFixed(2)],
-    ['Stock Expenses', totalExpenses.toFixed(2)],
-    ['Est. Gross Profit', totalProfit.toFixed(2)],
-    ['Net Cash Flow', (totalRevenue - totalExpenses).toFixed(2)]
+    ['--- SUMMARY (UGX) ---'],
+    ['Total Revenue', totalRevenue],
+    ['Stock Expenses', totalExpenses],
+    ['Est. Gross Profit', totalProfit],
+    ['Net Cash Flow', totalRevenue - totalExpenses]
   ];
   const allRows = [
-    [`HardwareDesk Financial Report - ${period}`],
+    [`HardwareDesk Uganda Financial Report - ${period}`],
     [`Generated: ${new Date().toLocaleString()}`],
     [],
     ...salesRows,
@@ -105,31 +105,31 @@ export default function ReportsView() {
           </style>
         </head>
         <body>
-          <h2>HardwareDesk — Financial Report (${period})</h2>
+          <h2>HardwareDesk Uganda — Financial Report (${period})</h2>
           <div>Generated: ${new Date().toLocaleString()}</div>
           <div class="metrics">
-            <div class="metric"><div class="label">Total Revenue</div><div class="val">$${totalRevenue.toFixed(2)}</div></div>
-            <div class="metric"><div class="label">Stock Expenses</div><div class="val red">$${totalStockPurchases.toFixed(2)}</div></div>
-            <div class="metric"><div class="label">Est. Gross Profit</div><div class="val green">$${totalProfit.toFixed(2)}</div></div>
-            <div class="metric"><div class="label">Net Cash Flow</div><div class="val ${netCashFlow >= 0 ? 'green' : 'red'}">$${netCashFlow.toFixed(2)}</div></div>
+            <div class="metric"><div class="label">Total Revenue</div><div class="val">UGX ${totalRevenue.toLocaleString()}</div></div>
+            <div class="metric"><div class="label">Stock Expenses</div><div class="val red">UGX ${totalStockPurchases.toLocaleString()}</div></div>
+            <div class="metric"><div class="label">Est. Gross Profit</div><div class="val green">UGX ${totalProfit.toLocaleString()}</div></div>
+            <div class="metric"><div class="label">Net Cash Flow</div><div class="val ${netCashFlow >= 0 ? 'green' : 'red'}">UGX ${netCashFlow.toLocaleString()}</div></div>
             <div class="metric"><div class="label">Profit Margin</div><div class="val">${profitMargin}%</div></div>
             <div class="metric"><div class="label">Transactions</div><div class="val">${totalTransactions}</div></div>
           </div>
           <h3>Sales Breakdown</h3>
           <table>
-            <thead><tr><th>Receipt #</th><th>Date</th><th>Items</th><th>Revenue</th><th>Est. Profit</th></tr></thead>
+            <thead><tr><th>Receipt #</th><th>Date</th><th>Items</th><th>Revenue (UGX)</th><th>Est. Profit (UGX)</th></tr></thead>
             <tbody>
-              ${filteredSales.map(s => `<tr><td>${s.id}</td><td>${s.date}</td><td>${s.itemsCount}</td><td>$${s.revenue.toFixed(2)}</td><td>$${s.profit.toFixed(2)}</td></tr>`).join('')}
+              ${filteredSales.map(s => `<tr><td>${s.id}</td><td>${s.date}</td><td>${s.itemsCount}</td><td>UGX ${s.revenue.toLocaleString()}</td><td>UGX ${s.profit.toLocaleString()}</td></tr>`).join('')}
             </tbody>
           </table>
           <h3>Stock Purchase Expenses</h3>
           <table>
-            <thead><tr><th>PO #</th><th>Date</th><th>Supplier</th><th>Amount</th></tr></thead>
+            <thead><tr><th>PO #</th><th>Date</th><th>Supplier</th><th>Amount (UGX)</th></tr></thead>
             <tbody>
-              ${filteredPurchases.map(p => `<tr><td>${p.id}</td><td>${p.date}</td><td>${p.supplier}</td><td>$${p.cost.toFixed(2)}</td></tr>`).join('')}
+              ${filteredPurchases.map(p => `<tr><td>${p.id}</td><td>${p.date}</td><td>${p.supplier}</td><td>UGX ${p.cost.toLocaleString()}</td></tr>`).join('')}
             </tbody>
           </table>
-          <div class="footer">HardwareDesk — Confidential Financial Document</div>
+          <div class="footer">HardwareDesk Uganda — Confidential Financial Document</div>
           <script>window.print(); window.close();</script>
         </body>
       </html>
@@ -142,8 +142,8 @@ export default function ReportsView() {
       {/* Header & Filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-gray-800">Financial Reports & Analytics</h2>
-          <p className="text-xs text-gray-500">Revenue, expenses, and profit breakdown for any time period.</p>
+          <h2 className="text-lg font-bold text-gray-800">Financial Reports & Analytics (UGX)</h2>
+          <p className="text-xs text-gray-500">Revenue, expenses, and profit breakdown in Ugandan Shillings.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {['TODAY', 'WEEKLY', 'MONTHLY', 'CUSTOM'].map((p) => (
@@ -175,16 +175,16 @@ export default function ReportsView() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { label: 'Total Revenue', val: `$${totalRevenue.toFixed(2)}`, color: 'text-gray-900', sub: 'Cash in from sales' },
-          { label: 'Stock Expenses', val: `$${totalStockPurchases.toFixed(2)}`, color: 'text-red-600', sub: 'Inventory purchased' },
-          { label: 'Est. Gross Profit', val: `$${totalProfit.toFixed(2)}`, color: 'text-green-600', sub: 'Sell price − cost' },
-          { label: 'Net Cash Flow', val: `$${netCashFlow.toFixed(2)}`, color: netCashFlow >= 0 ? 'text-slate-900' : 'text-red-600', sub: 'Revenue − expenses' },
+          { label: 'Total Revenue', val: `UGX ${totalRevenue.toLocaleString()}`, color: 'text-gray-900', sub: 'Cash in from sales' },
+          { label: 'Stock Expenses', val: `UGX ${totalStockPurchases.toLocaleString()}`, color: 'text-red-600', sub: 'Inventory purchased' },
+          { label: 'Est. Gross Profit', val: `UGX ${totalProfit.toLocaleString()}`, color: 'text-green-600', sub: 'Sell price − cost' },
+          { label: 'Net Cash Flow', val: `UGX ${netCashFlow.toLocaleString()}`, color: netCashFlow >= 0 ? 'text-slate-900' : 'text-red-600', sub: 'Revenue − expenses' },
           { label: 'Profit Margin', val: `${profitMargin}%`, color: 'text-indigo-600', sub: 'Of total revenue' },
           { label: 'Items Sold', val: totalItemsSold, color: 'text-gray-900', sub: `${totalTransactions} transactions` }
         ].map((card) => (
           <div key={card.label} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{card.label}</span>
-            <p className={`text-xl font-bold mt-1 ${card.color}`}>{card.val}</p>
+            <p className={`text-lg font-bold mt-1 ${card.color}`}>{card.val}</p>
             <span className="text-xs text-gray-400">{card.sub}</span>
           </div>
         ))}
@@ -213,8 +213,8 @@ export default function ReportsView() {
                 <tr key={s.id} className="hover:bg-gray-50 text-xs">
                   <td className="py-2.5 px-3 font-mono font-bold text-gray-900">{s.id}</td>
                   <td className="py-2.5 px-3 text-gray-600">{s.date}</td>
-                  <td className="py-2.5 px-3 font-semibold text-gray-900">${s.revenue.toFixed(2)}</td>
-                  <td className="py-2.5 px-3 font-bold text-green-600">${s.profit.toFixed(2)}</td>
+                  <td className="py-2.5 px-3 font-semibold text-gray-900">UGX {s.revenue.toLocaleString()}</td>
+                  <td className="py-2.5 px-3 font-bold text-green-600">UGX {s.profit.toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -243,7 +243,7 @@ export default function ReportsView() {
                   <td className="py-2.5 px-3 font-mono font-bold text-gray-900">{p.id}</td>
                   <td className="py-2.5 px-3 text-gray-600">{p.date}</td>
                   <td className="py-2.5 px-3 font-medium text-gray-800">{p.supplier}</td>
-                  <td className="py-2.5 px-3 font-bold text-red-600">${p.cost.toFixed(2)}</td>
+                  <td className="py-2.5 px-3 font-bold text-red-600">UGX {p.cost.toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>

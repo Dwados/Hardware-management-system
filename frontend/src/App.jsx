@@ -16,15 +16,15 @@ export default function App() {
       id: 'REC-849102',
       timestamp: new Date(Date.now() - 3600000).toISOString(),
       payment_method: 'Cash',
-      total: 120.00,
-      items: [{ name: 'Portland Cement 50kg', quantity: 10, selling_price: 12.00 }]
+      total: 450000,
+      items: [{ name: 'Portland Cement 50kg', quantity: 10, selling_price: 45000 }]
     },
     {
       id: 'REC-391045',
       timestamp: new Date(Date.now() - 7200000).toISOString(),
-      payment_method: 'Mobile Money',
-      total: 42.50,
-      items: [{ name: 'PVC Pipe 2 inch (3m)', quantity: 5, selling_price: 8.50 }]
+      payment_method: 'Mobile Money (MTN)',
+      total: 160000,
+      items: [{ name: 'PVC Pipe 2 inch (3m)', quantity: 5, selling_price: 32000 }]
     }
   ]);
 
@@ -46,14 +46,11 @@ export default function App() {
   }, []);
 
   const roleNavMap = {
-
     ADMIN: ['Dashboard', 'Sales', 'Inventory', 'Purchases', 'Stock Take', 'Debtors & Creditors', 'Reports', 'Receipt Book'],
     SALES_STAFF: ['Dashboard', 'Sales', 'Receipt Book', 'Debtors & Creditors'],
     STOREKEEPER: ['Dashboard', 'Inventory', 'Purchases', 'Stock Take', 'Debtors & Creditors'],
     VIEWER: ['Dashboard', 'Reports', 'Receipt Book']
   };
-
-
 
   const currentNav = roleNavMap[userRole] || roleNavMap.VIEWER;
 
@@ -63,6 +60,7 @@ export default function App() {
       <header className="bg-slate-900 text-white h-14 flex items-center justify-between px-4 border-b border-slate-800">
         <div className="flex items-center space-x-3">
           <span className="text-xl font-bold tracking-wide text-amber-500">HardwareDesk</span>
+          <span className="text-xs bg-slate-800 text-amber-400 font-bold px-2 py-0.5 rounded border border-slate-700">UGX Currency</span>
         </div>
 
         {/* Global Search & Quick Actions */}
@@ -79,64 +77,68 @@ export default function App() {
           {(userRole === 'ADMIN' || userRole === 'SALES_STAFF') && (
             <button 
               onClick={() => setActiveTab('Sales')}
-              className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-3 py-1.5 rounded text-sm transition shadow-sm"
+              className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-3 py-1.5 rounded text-sm transition"
             >
-              + Quick Sale
+              + Quick POS Sale
             </button>
           )}
 
-          {/* Role Switcher */}
-          <div className="flex items-center space-x-1 text-xs bg-slate-800 px-2 py-1 rounded border border-slate-700">
-            <span className="text-slate-400">Role:</span>
+          {/* Role Switcher for Testing/Role Simulation */}
+          <div className="flex items-center space-x-2 bg-slate-800 rounded px-2 py-1 border border-slate-700">
+            <span className="text-xs text-gray-400">Role:</span>
             <select 
               value={userRole} 
               onChange={(e) => {
-                setUserRole(e.target.value);
-                setActiveTab('Dashboard');
+                const newRole = e.target.value;
+                setUserRole(newRole);
+                const allowed = roleNavMap[newRole];
+                if (!allowed.includes(activeTab)) {
+                  setActiveTab('Dashboard');
+                }
               }}
-              className="bg-transparent text-amber-400 font-medium focus:outline-none"
+              className="bg-slate-900 text-xs text-amber-400 font-semibold focus:outline-none cursor-pointer"
             >
-              <option value="ADMIN" className="bg-slate-800 text-white">ADMIN</option>
-              <option value="SALES_STAFF" className="bg-slate-800 text-white">SALES STAFF</option>
-              <option value="STOREKEEPER" className="bg-slate-800 text-white">STOREKEEPER</option>
-              <option value="VIEWER" className="bg-slate-800 text-white">VIEWER</option>
+              <option value="ADMIN">ADMIN</option>
+              <option value="SALES_STAFF">SALES_STAFF</option>
+              <option value="STOREKEEPER">STOREKEEPER</option>
+              <option value="VIEWER">VIEWER</option>
             </select>
           </div>
         </div>
       </header>
 
-      <div className="flex flex-1">
-        {/* Sidebar Navigation */}
-        <aside className="w-56 bg-slate-800 text-slate-300 p-3 space-y-1">
-          {currentNav.map((item) => (
-            <button
-              key={item}
-              onClick={() => setActiveTab(item)}
-              className={`w-full text-left px-3 py-2 rounded text-sm font-medium transition ${
-                activeTab === item ? 'bg-amber-500 text-slate-900 font-bold' : 'hover:bg-slate-700 hover:text-white'
-              }`}
-            >
-              {item}
-            </button>
-          ))}
+      {/* Main Layout Container */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-56 bg-slate-900 text-slate-300 flex flex-col justify-between p-3 border-r border-slate-800">
+          <nav className="space-y-1">
+            {currentNav.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`w-full text-left px-3 py-2 rounded text-sm font-medium transition ${
+                  activeTab === tab
+                    ? 'bg-amber-500 text-slate-900 font-bold'
+                    : 'hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </nav>
+          <div className="text-xs text-slate-500 p-2 border-t border-slate-800">
+            HardwareDesk v1.2 (UGX)
+          </div>
         </aside>
 
-        {/* Main Content Area */}
-        <main className="flex-1 p-6 space-y-6">
+        {/* Content Body */}
+        <main className="flex-1 overflow-y-auto p-6 bg-slate-50">
           {activeTab === 'Sales' ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-800">Quick Sales Terminal</h1>
-                <span className="text-xs bg-slate-200 text-slate-700 font-semibold px-2.5 py-1 rounded">
-                  Active Role: {userRole}
-                </span>
-              </div>
-              <SalesView onSaleComplete={handleSaleComplete} />
-            </div>
+            <SalesView onSaleComplete={handleSaleComplete} />
           ) : activeTab === 'Inventory' ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-800">Inventory & Products</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Stock & Inventory</h1>
                 <span className="text-xs bg-slate-200 text-slate-700 font-semibold px-2.5 py-1 rounded">
                   Active Role: {userRole}
                 </span>
@@ -148,15 +150,12 @@ export default function App() {
           ) : activeTab === 'Debtors & Creditors' || activeTab === 'Customers & Debtors' || activeTab === 'Suppliers & Creditors' ? (
             <DebtorsCreditorsLedgerView onAddReceipt={handleSaleComplete} />
           ) : activeTab === 'Stock Take' ? (
-
-
             <StockTakeView userRole={userRole} />
           ) : activeTab === 'Reports' ? (
             <ReportsView />
           ) : activeTab === 'Receipt Book' ? (
             <ReceiptBookView receipts={receipts} />
           ) : (
-
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-gray-800">{activeTab}</h1>
@@ -169,7 +168,7 @@ export default function App() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Today's Sales</span>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">$1,245.50</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">UGX 4,850,000</p>
                   <span className="text-xs text-green-600 font-medium">+12% vs yesterday</span>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
@@ -184,7 +183,7 @@ export default function App() {
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Customers Owe Us</span>
-                  <p className="text-2xl font-bold text-red-600 mt-1">$450.00</p>
+                  <p className="text-2xl font-bold text-red-600 mt-1">UGX 1,650,000</p>
                   <span className="text-xs text-red-500 font-medium">3 Unpaid credit sales</span>
                 </div>
               </div>
@@ -198,7 +197,7 @@ export default function App() {
                       <tr>
                         <th className="py-2 px-3">Item</th>
                         <th className="py-2 px-3">Qty</th>
-                        <th className="py-2 px-3">Amount</th>
+                        <th className="py-2 px-3">Amount (UGX)</th>
                         <th className="py-2 px-3">Payment</th>
                       </tr>
                     </thead>
@@ -206,14 +205,14 @@ export default function App() {
                       <tr>
                         <td className="py-2 px-3 font-medium">Cement 50kg</td>
                         <td className="py-2 px-3">10</td>
-                        <td className="py-2 px-3">$120.00</td>
-                        <td className="py-2 px-3"><span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded">Cash</span></td>
+                        <td className="py-2 px-3 font-semibold">UGX 450,000</td>
+                        <td className="py-2 px-3"><span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded font-bold">Cash</span></td>
                       </tr>
                       <tr>
                         <td className="py-2 px-3 font-medium">PVC Pipe 2"</td>
                         <td className="py-2 px-3">5</td>
-                        <td className="py-2 px-3">$45.00</td>
-                        <td className="py-2 px-3"><span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">Mobile</span></td>
+                        <td className="py-2 px-3 font-semibold">UGX 160,000</td>
+                        <td className="py-2 px-3"><span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded font-bold">MTN MoMo</span></td>
                       </tr>
                     </tbody>
                   </table>

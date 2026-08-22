@@ -6,14 +6,14 @@ const INITIAL_PRODUCTS = [
     id: 'prod-1',
     sku: 'CEM-001',
     barcode: '8901234567890',
-    name: 'Portland Cement 50kg',
+    name: 'Portland Cement 50kg (Tororo/Hima)',
     category: 'Building',
-    cost_price: 9.50,
-    selling_price: 12.00,
+    cost_price: 36000,
+    selling_price: 45000,
     stock_quantity: 120,
     minimum_stock: 20,
     location: 'A1-S1-B1',
-    supplier: 'Supplier A'
+    supplier: 'Tororo Cement Ltd'
   },
   {
     id: 'prod-2',
@@ -21,12 +21,12 @@ const INITIAL_PRODUCTS = [
     barcode: '8901234567891',
     name: 'PVC Pipe 2 inch (3m)',
     category: 'Plumbing',
-    cost_price: 5.00,
-    selling_price: 8.50,
+    cost_price: 24000,
+    selling_price: 32000,
     stock_quantity: 4,
     minimum_stock: 10,
     location: 'A2-S3-B1',
-    supplier: 'Supplier B'
+    supplier: 'Roofings Ltd'
   },
   {
     id: 'prod-3',
@@ -34,12 +34,12 @@ const INITIAL_PRODUCTS = [
     barcode: '8901234567892',
     name: 'Steel Nails 3 inch (kg)',
     category: 'Hardware',
-    cost_price: 1.50,
-    selling_price: 2.50,
-    stock_quantity: 0,
+    cost_price: 6000,
+    selling_price: 8500,
+    stock_quantity: 25,
     minimum_stock: 15,
     location: 'A3-S1-B2',
-    supplier: 'Supplier C'
+    supplier: 'Hardware Supplies Uganda'
   }
 ];
 
@@ -94,14 +94,12 @@ export default function InventoryView({ userRole }) {
     setNewProduct({ name: '', sku: '', barcode: '', category: 'Building', cost_price: '', selling_price: '', stock_quantity: '', minimum_stock: 5, location: 'A1-S1-B1' });
   };
 
-
   const handleAdjustStock = (e) => {
     e.preventDefault();
     const change = parseInt(adjustQty) || 0;
     setProducts(products.map(p => {
       if (p.id === showAdjustModal.id) {
-        const newQty = Math.max(0, p.stock_quantity + change);
-        return { ...p, stock_quantity: newQty };
+        return { ...p, stock_quantity: Math.max(0, p.stock_quantity + change) };
       }
       return p;
     }));
@@ -111,109 +109,112 @@ export default function InventoryView({ userRole }) {
 
   return (
     <div className="space-y-4">
-      {/* Header controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <input 
-          type="text" 
-          placeholder="Filter products by Name, SKU, or Barcode..." 
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-1.5 text-sm w-full sm:w-80 focus:ring-1 focus:ring-amber-500 focus:outline-none"
-        />
-        {(userRole === 'ADMIN' || userRole === 'STOREKEEPER') && (
+      {/* Controls Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div className="relative w-full sm:w-80">
+          <input 
+            type="text" 
+            placeholder="Filter by name, SKU, barcode..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
+          />
+        </div>
+
+        {userRole !== 'VIEWER' && (
           <button 
             onClick={() => setShowAddModal(true)}
-            className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-4 py-1.5 rounded text-sm transition"
+            className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-3 py-1.5 rounded text-sm transition shadow-sm w-full sm:w-auto"
           >
-            + Add New Product
+            + Add Product
           </button>
         )}
       </div>
 
-      {/* Inventory Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-slate-100 text-gray-700 text-xs uppercase tracking-wider border-b">
-            <tr>
-              <th className="py-3 px-4">SKU / Barcode</th>
-              <th className="py-3 px-4">Product Name</th>
-              <th className="py-3 px-4">Category</th>
-              <th className="py-3 px-4">Stock</th>
-              <th className="py-3 px-4">Cost Price</th>
-              <th className="py-3 px-4">Selling Price</th>
-              <th className="py-3 px-4">Location</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filteredProducts.map(p => (
-              <tr key={p.id} className="hover:bg-gray-50">
-                <td className="py-3 px-4">
-                  <div className="font-mono text-xs text-gray-900 font-bold">{p.sku}</div>
-                  <div className="text-xs text-gray-400">{p.barcode || 'No barcode'}</div>
-                </td>
-                <td className="py-3 px-4 font-medium text-gray-900">{p.name}</td>
-                <td className="py-3 px-4 text-gray-600">{p.category}</td>
-                <td className="py-3 px-4 font-bold text-gray-900">{p.stock_quantity}</td>
-                <td className="py-3 px-4 text-gray-600">${p.cost_price.toFixed(2)}</td>
-                <td className="py-3 px-4 font-medium text-gray-900">${p.selling_price.toFixed(2)}</td>
-                <td className="py-3 px-4 font-mono text-xs text-slate-600">{p.location}</td>
-                <td className="py-3 px-4">{getStockBadge(p.stock_quantity, p.minimum_stock)}</td>
-                <td className="py-3 px-4 text-right space-x-2">
-                  {(userRole === 'ADMIN' || userRole === 'STOREKEEPER') && (
-                    <button 
-                      onClick={() => setShowAdjustModal(p)}
-                      className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 px-2 py-1 rounded border border-slate-300"
-                    >
-                      Adjust
-                    </button>
-                  )}
-                </td>
+      {/* Products Table */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-100 text-gray-700 text-xs uppercase border-b">
+              <tr>
+                <th className="py-3 px-4">Item & SKU</th>
+                <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4">Cost Price (UGX)</th>
+                <th className="py-3 px-4">Selling Price (UGX)</th>
+                <th className="py-3 px-4">Stock Level</th>
+                <th className="py-3 px-4">Location</th>
+                <th className="py-3 px-4">Status</th>
+                {userRole !== 'VIEWER' && <th className="py-3 px-4 text-right">Actions</th>}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredProducts.map(p => (
+                <tr key={p.id} className="hover:bg-gray-50">
+                  <td className="py-3 px-4">
+                    <div className="font-semibold text-gray-900">{p.name}</div>
+                    <div className="text-xs text-gray-400 font-mono">SKU: {p.sku} | Barcode: {p.barcode || 'N/A'}</div>
+                  </td>
+                  <td className="py-3 px-4 text-gray-600">{p.category_id || p.category}</td>
+                  <td className="py-3 px-4 text-gray-600">UGX {(p.cost_price || 0).toLocaleString()}</td>
+                  <td className="py-3 px-4 font-bold text-gray-900">UGX {(p.selling_price || 0).toLocaleString()}</td>
+                  <td className="py-3 px-4 font-semibold">{p.stock_quantity} {p.unit || 'pcs'}</td>
+                  <td className="py-3 px-4 font-mono text-xs text-gray-500">{p.storage_location_id || p.location}</td>
+                  <td className="py-3 px-4">{getStockBadge(p.stock_quantity, p.minimum_stock)}</td>
+                  {userRole !== 'VIEWER' && (
+                    <td className="py-3 px-4 text-right space-x-2">
+                      <button 
+                        onClick={() => setShowAdjustModal(p)}
+                        className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-2.5 py-1 rounded"
+                      >
+                        Adjust
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Add Product Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-5 space-y-4">
-            <h3 className="text-lg font-bold text-gray-900 border-b pb-2">Add New Product</h3>
+          <div className="bg-white rounded-lg max-w-md w-full p-5 space-y-4 shadow-xl">
+            <h3 className="text-sm font-bold text-gray-900 border-b pb-2">Add New Product (UGX)</h3>
             <form onSubmit={handleAddProduct} className="space-y-3 text-sm">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Product Name</label>
-                <input required type="text" className="w-full border rounded px-3 py-1.5" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+                <input required type="text" placeholder="e.g. Iron Sheets 30 Gauge" className="w-full border rounded px-3 py-1.5" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">SKU</label>
-                  <input required type="text" className="w-full border rounded px-3 py-1.5" value={newProduct.sku} onChange={e => setNewProduct({...newProduct, sku: e.target.value})} />
+                  <input required type="text" placeholder="IRN-030" className="w-full border rounded px-3 py-1.5" value={newProduct.sku} onChange={e => setNewProduct({...newProduct, sku: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Barcode</label>
-                  <input type="text" className="w-full border rounded px-3 py-1.5" value={newProduct.barcode} onChange={e => setNewProduct({...newProduct, barcode: e.target.value})} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Cost Price ($)</label>
-                  <input required type="number" step="0.01" className="w-full border rounded px-3 py-1.5" value={newProduct.cost_price} onChange={e => setNewProduct({...newProduct, cost_price: e.target.value})} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Selling Price ($)</label>
-                  <input required type="number" step="0.01" className="w-full border rounded px-3 py-1.5" value={newProduct.selling_price} onChange={e => setNewProduct({...newProduct, selling_price: e.target.value})} />
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Barcode (Optional)</label>
+                  <input type="text" placeholder="Scan or enter" className="w-full border rounded px-3 py-1.5" value={newProduct.barcode} onChange={e => setNewProduct({...newProduct, barcode: e.target.value})} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Stock Quantity</label>
-                  <input required type="number" className="w-full border rounded px-3 py-1.5" value={newProduct.stock_quantity} onChange={e => setNewProduct({...newProduct, stock_quantity: e.target.value})} />
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Cost Price (UGX)</label>
+                  <input required type="number" placeholder="45000" className="w-full border rounded px-3 py-1.5" value={newProduct.cost_price} onChange={e => setNewProduct({...newProduct, cost_price: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Min Stock Alert</label>
-                  <input required type="number" className="w-full border rounded px-3 py-1.5" value={newProduct.minimum_stock} onChange={e => setNewProduct({...newProduct, minimum_stock: e.target.value})} />
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Selling Price (UGX)</label>
+                  <input required type="number" placeholder="55000" className="w-full border rounded px-3 py-1.5" value={newProduct.selling_price} onChange={e => setNewProduct({...newProduct, selling_price: e.target.value})} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Initial Stock Qty</label>
+                  <input required type="number" placeholder="50" className="w-full border rounded px-3 py-1.5" value={newProduct.stock_quantity} onChange={e => setNewProduct({...newProduct, stock_quantity: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Storage Location</label>
+                  <input type="text" placeholder="A1-S2-B3" className="w-full border rounded px-3 py-1.5" value={newProduct.location} onChange={e => setNewProduct({...newProduct, location: e.target.value})} />
                 </div>
               </div>
               <div className="flex justify-end space-x-2 pt-3 border-t">
@@ -225,23 +226,27 @@ export default function InventoryView({ userRole }) {
         </div>
       )}
 
-      {/* Adjust Stock Modal */}
+      {/* Quick Adjust Modal */}
       {showAdjustModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-sm w-full p-5 space-y-4">
-            <h3 className="text-md font-bold text-gray-900 border-b pb-2">Adjust Stock: {showAdjustModal.name}</h3>
+          <div className="bg-white rounded-lg max-w-sm w-full p-5 space-y-4 shadow-xl">
+            <h3 className="text-sm font-bold text-gray-900 border-b pb-2">Quick Stock Adjust: {showAdjustModal.name}</h3>
             <form onSubmit={handleAdjustStock} className="space-y-3 text-sm">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Quantity Change (+ to add, - to subtract)</label>
-                <input required type="number" placeholder="e.g. -2 or 10" className="w-full border rounded px-3 py-1.5" value={adjustQty} onChange={e => setAdjustQty(e.target.value)} />
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Current Stock</label>
+                <div className="font-bold text-lg">{showAdjustModal.stock_quantity} {showAdjustModal.unit || 'pcs'}</div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Adjustment Quantity (+ / -)</label>
+                <input required type="number" placeholder="e.g. -2 or +10" className="w-full border rounded px-3 py-1.5" value={adjustQty} onChange={e => setAdjustQty(e.target.value)} />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Reason</label>
                 <select className="w-full border rounded px-3 py-1.5" value={adjustReason} onChange={e => setAdjustReason(e.target.value)}>
-                  <option value="DAMAGE">DAMAGE</option>
-                  <option value="LOSS">LOSS</option>
-                  <option value="THEFT">THEFT</option>
-                  <option value="ADJUSTMENT">MANUAL ADJUSTMENT</option>
+                  <option value="DAMAGE">Damage / Broken</option>
+                  <option value="EXPIRED">Defective</option>
+                  <option value="AUDIT">Stock Count Variance</option>
+                  <option value="RETURN">Customer Return</option>
                 </select>
               </div>
               <div className="flex justify-end space-x-2 pt-3 border-t">

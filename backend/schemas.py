@@ -10,9 +10,10 @@ class UserRole(str, Enum):
     VIEWER = "VIEWER"
 
 class UserBase(BaseModel):
-    email: EmailStr
+    email: str
     full_name: str
     role: UserRole
+
 
 class UserResponse(UserBase):
     id: str

@@ -19,41 +19,37 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
   });
 
   const [debtors, setDebtors] = useState([
-    { id: 'c-1', name: 'John Doe Builders', phone: '+11223344', total_credit: 350.00, amount_paid: 230.00, balance_due: 120.00, store_credit: 0.00, status: 'OVERDUE' },
-    { id: 'c-2', name: 'Apex Construction', phone: '+55667788', total_credit: 500.00, amount_paid: 170.00, balance_due: 330.00, store_credit: 0.00, status: 'PENDING' },
-    { id: 'c-3', name: 'Samuel Miller', phone: '+77889900', total_credit: 0.00, amount_paid: 250.00, balance_due: 0.00, store_credit: 150.00, status: 'STORE CREDIT' }
+    { id: 'c-1', name: 'John Doe Builders', phone: '+256772123456', total_credit: 1250000, amount_paid: 800000, balance_due: 450000, store_credit: 0, status: 'OVERDUE' },
+    { id: 'c-2', name: 'Apex Construction Ltd', phone: '+256701987654', total_credit: 3200000, amount_paid: 2000000, balance_due: 1200000, store_credit: 0, status: 'PENDING' },
+    { id: 'c-3', name: 'Samuel Miller (Mukono)', phone: '+256782554433', total_credit: 0, amount_paid: 600000, balance_due: 0, store_credit: 600000, status: 'STORE CREDIT' }
   ]);
 
   const [creditors, setCreditors] = useState([
-    { id: 's-1', name: 'Plumbing World', phone: '+987654321', total_purchased: 600.00, amount_paid: 450.00, balance_due: 150.00, status: 'PENDING' },
-    { id: 's-2', name: 'BuildPro Supplies', phone: '+123456789', total_purchased: 1200.00, amount_paid: 1200.00, balance_due: 0.00, status: 'CLEARED' }
+    { id: 's-1', name: 'Plumbing World Uganda', phone: '+256414123456', total_purchased: 4500000, amount_paid: 3000000, balance_due: 1500000, status: 'PENDING' },
+    { id: 's-2', name: 'Roofings Ltd Supplies', phone: '+256414654321', total_purchased: 12000000, amount_paid: 12000000, balance_due: 0, status: 'CLEARED' }
   ]);
 
   useEffect(() => {
-    fetchDebtorsApi().then(d => { if (d) setDebtors(d); });
-    fetchCreditorsApi().then(c => { if (c) setCreditors(c); });
+    fetchDebtorsApi().then(d => { if (d && d.length > 0) setDebtors(d); });
+    fetchCreditorsApi().then(c => { if (c && c.length > 0) setCreditors(c); });
   }, []);
 
   // Transaction audit drawer
-  const [auditDrawer, setAuditDrawer] = useState(null); // { entity, transactions }
+  const [auditDrawer, setAuditDrawer] = useState(null);
   const openAuditDrawer = async (item) => {
     let txns = [];
     try {
       const res = await fetch(`http://127.0.0.1:8000/ledger/transactions/${item.id}`);
       if (res.ok) txns = await res.json();
     } catch (_) {}
-    // Fallback mock transactions if backend offline
     if (!txns.length) {
       txns = [
         { type: activeTab === 'DEBTORS' ? 'CREDIT_EXTENDED' : 'PURCHASE_ON_CREDIT', amount: (item.total_credit || item.total_purchased || 0), timestamp: new Date(Date.now() - 86400000 * 7).toISOString(), note: 'Account opened' },
-        ...(item.amount_paid > 0 ? [{ type: 'PAYMENT_RECEIVED', amount: item.amount_paid, timestamp: new Date(Date.now() - 86400000 * 2).toISOString(), note: 'Partial payment received' }] : [])
+        ...(item.amount_paid > 0 ? [{ type: 'PAYMENT_RECEIVED', amount: item.amount_paid, payment_method: 'MTN Mobile Money', timestamp: new Date(Date.now() - 86400000 * 2).toISOString(), note: 'Payment received via MTN MoMo' }] : [])
       ];
     }
     setAuditDrawer({ entity: item, transactions: txns });
   };
-
-
-
 
   const currentList = activeTab === 'DEBTORS' ? debtors : creditors;
 
@@ -82,21 +78,21 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
           </style>
         </head>
         <body>
-          <h2>HardwareDesk</h2>
-          <div class="center" style="font-size:11px;">Official Transaction Receipt</div>
+          <h2>HardwareDesk Uganda</h2>
+          <div class="center" style="font-size:11px;">Official Ledger Receipt (UGX)</div>
           <div class="border"></div>
           <div><strong>Receipt #:</strong> ${receipt.id}</div>
           <div><strong>Type:</strong> ${receipt.type_label}</div>
           <div><strong>Party:</strong> ${receipt.customer_name}</div>
           <div><strong>Date:</strong> ${new Date(receipt.timestamp).toLocaleString()}</div>
-          <div><strong>Payment:</strong> ${receipt.payment_method}</div>
+          <div><strong>Payment Method:</strong> ${receipt.payment_method}</div>
           <div class="border"></div>
           <div class="item bold font-size:14px;">
             <span>AMOUNT:</span>
-            <span>$${receipt.total.toFixed(2)}</span>
+            <span>UGX ${(receipt.total || 0).toLocaleString()}</span>
           </div>
           <div class="border"></div>
-          <div class="center" style="font-size:10px; margin-top:15px;">Thank you for your business!</div>
+          <div class="center" style="font-size:10px; margin-top:15px;">Webale Nnyo / Thank you for your business!</div>
           <script>window.print(); window.close();</script>
         </body>
       </html>
@@ -220,8 +216,6 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
     setPaymentAmount('');
   };
 
-
-
   return (
     <div className="space-y-6">
       {/* Overview Cards */}
@@ -233,7 +227,7 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-amber-900 uppercase">Customers Owe Us (Debtors)</span>
           </div>
-          <p className="text-2xl font-bold text-red-600 mt-2">${totalDebtorsBalance.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-red-600 mt-2">UGX {totalDebtorsBalance.toLocaleString()}</p>
           <span className="text-xs text-gray-500">Uncollected customer credit sales</span>
         </div>
 
@@ -244,8 +238,8 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-green-900 uppercase">Customer Store Credits / Prepayments</span>
           </div>
-          <p className="text-2xl font-bold text-green-700 mt-2">${totalStoreCredits.toFixed(2)}</p>
-          <span className="text-xs text-green-800">Prepaid orders / Change kept for future sales</span>
+          <p className="text-2xl font-bold text-green-700 mt-2">UGX {totalStoreCredits.toLocaleString()}</p>
+          <span className="text-xs text-green-800">Prepaid orders / Balance kept for future sales</span>
         </div>
 
         <div 
@@ -255,7 +249,7 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
           <div className="flex justify-between items-center">
             <span className="text-xs font-bold text-slate-800 uppercase">We Owe Suppliers (Creditors)</span>
           </div>
-          <p className="text-2xl font-bold text-slate-900 mt-2">${totalCreditorsBalance.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-slate-900 mt-2">UGX {totalCreditorsBalance.toLocaleString()}</p>
           <span className="text-xs text-gray-500">Unpaid supplier stock purchases</span>
         </div>
       </div>
@@ -297,17 +291,16 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
         </div>
 
         {/* Ledger Table */}
-
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-100 text-gray-700 text-xs uppercase border-b">
               <tr>
                 <th className="py-3 px-4">{activeTab === 'DEBTORS' ? 'Customer Name' : 'Supplier Name'}</th>
                 <th className="py-3 px-4">Phone</th>
-                <th className="py-3 px-4">{activeTab === 'DEBTORS' ? 'Total Credit' : 'Total Invoiced'}</th>
-                <th className="py-3 px-4">Amount Paid</th>
-                <th className="py-3 px-4">Balance Due</th>
-                {activeTab === 'DEBTORS' && <th className="py-3 px-4">Store Credit (Prepaid)</th>}
+                <th className="py-3 px-4">{activeTab === 'DEBTORS' ? 'Total Credit (UGX)' : 'Total Invoiced (UGX)'}</th>
+                <th className="py-3 px-4">Amount Paid (UGX)</th>
+                <th className="py-3 px-4">Balance Due (UGX)</th>
+                {activeTab === 'DEBTORS' && <th className="py-3 px-4">Store Credit (UGX)</th>}
                 <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4 text-right">Action</th>
               </tr>
@@ -321,14 +314,14 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="py-3 px-4 font-semibold text-gray-900">{item.name}</td>
                     <td className="py-3 px-4 text-xs text-gray-600 font-mono">{item.phone}</td>
-                    <td className="py-3 px-4 text-gray-700">${totalAmount.toFixed(2)}</td>
-                    <td className="py-3 px-4 text-green-600 font-medium">${(item.amount_paid || 0).toFixed(2)}</td>
+                    <td className="py-3 px-4 text-gray-700">UGX {totalAmount.toLocaleString()}</td>
+                    <td className="py-3 px-4 text-green-600 font-medium">UGX {(item.amount_paid || 0).toLocaleString()}</td>
                     <td className={`py-3 px-4 font-bold ${item.balance_due > 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                      ${(item.balance_due || 0).toFixed(2)}
+                      UGX {(item.balance_due || 0).toLocaleString()}
                     </td>
                     {activeTab === 'DEBTORS' && (
                       <td className="py-3 px-4 font-bold text-green-700">
-                        {isPrepaid ? `$${item.store_credit.toFixed(2)}` : '$0.00'}
+                        {isPrepaid ? `UGX ${item.store_credit.toLocaleString()}` : 'UGX 0'}
                       </td>
                     )}
                     <td className="py-3 px-4">
@@ -362,7 +355,6 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
                         📋 History
                       </button>
                     </td>
-
                   </tr>
                 );
               })}
@@ -374,37 +366,37 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
       {/* Record Payment Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-sm w-full p-5 space-y-4">
+          <div className="bg-white rounded-lg max-w-sm w-full p-5 space-y-4 shadow-xl">
             <h3 className="text-sm font-bold text-gray-900 border-b pb-2">
               Record Payment: {showPaymentModal.name}
             </h3>
             <form onSubmit={handleRecordPayment} className="space-y-3 text-sm">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Balance Due</label>
-                <div className="font-bold text-red-600 text-lg">${(showPaymentModal.balance_due || 0).toFixed(2)}</div>
+                <div className="font-bold text-red-600 text-lg">UGX {(showPaymentModal.balance_due || 0).toLocaleString()}</div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Payment Amount ($)</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Payment Amount (UGX)</label>
                 <input 
                   required 
                   type="number" 
-                  step="0.01" 
-                  placeholder="e.g. 50.00" 
-                  className="w-full border rounded px-3 py-1.5" 
+                  placeholder="e.g. 200000" 
+                  className="w-full border rounded px-3 py-1.5 font-bold" 
                   value={paymentAmount} 
                   onChange={e => setPaymentAmount(e.target.value)} 
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Payment Method</label>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Payment Method & Network</label>
                 <select 
-                  className="w-full border rounded px-3 py-1.5" 
+                  className="w-full border rounded px-3 py-1.5 font-semibold text-xs" 
                   value={paymentMethod} 
                   onChange={e => setPaymentMethod(e.target.value)}
                 >
-                  <option value="Cash">Cash</option>
-                  <option value="Mobile Money">Mobile Money</option>
-                  <option value="Bank">Bank Transfer</option>
+                  <option value="Cash">💵 Cash</option>
+                  <option value="MTN Mobile Money">🟡 MTN Mobile Money (MoMo)</option>
+                  <option value="Airtel Money">🔴 Airtel Money</option>
+                  <option value="Bank Transfer">🏦 Bank Transfer</option>
                 </select>
               </div>
               <div className="flex justify-end space-x-2 pt-3 border-t">
@@ -426,12 +418,13 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
           </div>
         </div>
       )}
+
       {/* Add New Entry Modal */}
       {showAddEntryModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-sm w-full p-5 space-y-4">
+          <div className="bg-white rounded-lg max-w-sm w-full p-5 space-y-4 shadow-xl">
             <h3 className="text-sm font-bold text-gray-900 border-b pb-2">
-              Add New Account / Entry
+              Add New Account / Entry (UGX)
             </h3>
             <form onSubmit={handleAddEntry} className="space-y-3 text-sm">
               <div>
@@ -451,7 +444,7 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
                 <input 
                   required 
                   type="text" 
-                  placeholder="e.g. Samuel Miller" 
+                  placeholder="e.g. Samuel Mukasa" 
                   className="w-full border rounded px-3 py-1.5" 
                   value={newEntry.name} 
                   onChange={e => setNewEntry({ ...newEntry, name: e.target.value })} 
@@ -461,7 +454,7 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Phone Number</label>
                 <input 
                   type="text" 
-                  placeholder="+12345678" 
+                  placeholder="+256772000000" 
                   className="w-full border rounded px-3 py-1.5" 
                   value={newEntry.phone} 
                   onChange={e => setNewEntry({ ...newEntry, phone: e.target.value })} 
@@ -469,13 +462,12 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  {newEntry.type === 'PREPAYMENT' ? 'Prepayment Deposit ($)' : 'Initial Balance Amount ($)'}
+                  {newEntry.type === 'PREPAYMENT' ? 'Prepayment Deposit (UGX)' : 'Initial Balance Amount (UGX)'}
                 </label>
                 <input 
                   required 
                   type="number" 
-                  step="0.01" 
-                  placeholder="e.g. 150.00" 
+                  placeholder="e.g. 500000" 
                   className="w-full border rounded px-3 py-1.5" 
                   value={newEntry.amount} 
                   onChange={e => setNewEntry({ ...newEntry, amount: e.target.value })} 
@@ -517,15 +509,15 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
             <div className="grid grid-cols-3 gap-px bg-gray-100 border-b text-center text-xs">
               <div className="bg-white p-3">
                 <div className="text-gray-500 font-semibold uppercase">Total Credit</div>
-                <div className="font-bold text-gray-900 mt-0.5">${(auditDrawer.entity.total_credit || auditDrawer.entity.total_purchased || 0).toFixed(2)}</div>
+                <div className="font-bold text-gray-900 mt-0.5">UGX {(auditDrawer.entity.total_credit || auditDrawer.entity.total_purchased || 0).toLocaleString()}</div>
               </div>
               <div className="bg-white p-3">
                 <div className="text-green-600 font-semibold uppercase">Amount Paid</div>
-                <div className="font-bold text-green-700 mt-0.5">${(auditDrawer.entity.amount_paid || 0).toFixed(2)}</div>
+                <div className="font-bold text-green-700 mt-0.5">UGX {(auditDrawer.entity.amount_paid || 0).toLocaleString()}</div>
               </div>
               <div className="bg-white p-3">
                 <div className="text-red-600 font-semibold uppercase">Balance Due</div>
-                <div className="font-bold text-red-700 mt-0.5">${(auditDrawer.entity.balance_due || 0).toFixed(2)}</div>
+                <div className="font-bold text-red-700 mt-0.5">UGX {(auditDrawer.entity.balance_due || 0).toLocaleString()}</div>
               </div>
             </div>
 
@@ -560,7 +552,7 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
                         {tx.payment_method && <div className="text-xs text-gray-400">via {tx.payment_method}</div>}
                       </div>
                     </div>
-                    <div className="text-sm font-bold text-gray-900">${(tx.amount || 0).toFixed(2)}</div>
+                    <div className="text-sm font-bold text-gray-900">UGX {(tx.amount || 0).toLocaleString()}</div>
                   </div>
                 );
               })}
@@ -580,4 +572,3 @@ export default function DebtorsCreditorsLedgerView({ onAddReceipt }) {
     </div>
   );
 }
-

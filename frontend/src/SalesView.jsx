@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { processSaleApi } from './api';
 
 const MOCK_PRODUCTS = [
-  { id: 'prod-1', sku: 'CEM-001', barcode: '8901234567890', name: 'Portland Cement 50kg', selling_price: 12.00, stock_quantity: 120 },
-  { id: 'prod-2', sku: 'PVC-002', barcode: '8901234567891', name: 'PVC Pipe 2 inch (3m)', selling_price: 8.50, stock_quantity: 4 },
-  { id: 'prod-3', sku: 'NAL-003', barcode: '8901234567892', name: 'Steel Nails 3 inch (kg)', selling_price: 2.50, stock_quantity: 25 }
+  { id: 'prod-1', sku: 'CEM-001', barcode: '8901234567890', name: 'Portland Cement 50kg', selling_price: 45000, stock_quantity: 120 },
+  { id: 'prod-2', sku: 'PVC-002', barcode: '8901234567891', name: 'PVC Pipe 2 inch (3m)', selling_price: 32000, stock_quantity: 4 },
+  { id: 'prod-3', sku: 'NAL-003', barcode: '8901234567892', name: 'Steel Nails 3 inch (kg)', selling_price: 8500, stock_quantity: 25 }
 ];
 
 export default function SalesView({ onSaleComplete }) {
@@ -17,13 +17,13 @@ export default function SalesView({ onSaleComplete }) {
   const searchRef = useRef(null);
 
   const mockCustomers = [
-    { id: 'c-1', name: 'John Doe Builders', store_credit: 0.00 },
-    { id: 'c-2', name: 'Apex Construction', store_credit: 0.00 },
-    { id: 'c-3', name: 'Samuel Miller', store_credit: 150.00 }
+    { id: 'c-1', name: 'John Doe Builders', store_credit: 0 },
+    { id: 'c-2', name: 'Apex Construction', store_credit: 0 },
+    { id: 'c-3', name: 'Samuel Miller', store_credit: 500000 }
   ];
 
   const custObj = mockCustomers.find(c => c.id === selectedCustomer);
-  const availableCredit = custObj ? custObj.store_credit : 0.00;
+  const availableCredit = custObj ? custObj.store_credit : 0;
 
   // Global barcode scanner listener — any keystrokes while not in an input auto-focus and fill the search box
   useEffect(() => {
@@ -55,7 +55,6 @@ export default function SalesView({ onSaleComplete }) {
     p.sku.toLowerCase().includes(search.toLowerCase()) ||
     p.barcode.includes(search)
   );
-
 
   const addToCart = (product) => {
     const existing = cart.find(item => item.id === product.id);
@@ -110,9 +109,9 @@ export default function SalesView({ onSaleComplete }) {
           </style>
         </head>
         <body>
-          <h2>HardwareDesk</h2>
+          <h2>HardwareDesk Uganda</h2>
           ${isThermal ? `
-            <div class="center" style="font-size:11px;">Hardware Store Management</div>
+            <div class="center" style="font-size:11px;">Hardware Store Management (UGX)</div>
             <div class="border"></div>
             <div><strong>Receipt #:</strong> ${receipt.id}</div>
             <div><strong>Date:</strong> ${new Date(receipt.timestamp).toLocaleString()}</div>
@@ -121,39 +120,39 @@ export default function SalesView({ onSaleComplete }) {
             ${receipt.items.map(i => `
               <div class="item">
                 <span>${i.quantity}x ${i.name}</span>
-                <span>$${(i.selling_price * i.quantity).toFixed(2)}</span>
+                <span>UGX ${(i.selling_price * i.quantity).toLocaleString()}</span>
               </div>
             `).join('')}
             <div class="border"></div>
-            <div class="item bold"><span>TOTAL:</span><span>$${receipt.total.toFixed(2)}</span></div>
+            <div class="item bold"><span>TOTAL:</span><span>UGX ${receipt.total.toLocaleString()}</span></div>
             <div class="border"></div>
-            <div class="center" style="font-size:10px; margin-top:15px;">Thank you for your business!</div>
+            <div class="center" style="font-size:10px; margin-top:15px;">Webale Nnyo / Thank you for your business!</div>
           ` : `
-            <div class="subtitle">Official Sale Invoice</div>
+            <div class="subtitle">Official Sale Tax Invoice</div>
             <div class="meta">
               <div>
                 <div><strong>Receipt #:</strong> ${receipt.id}</div>
-                <div><strong>Payment:</strong> ${receipt.payment_method}</div>
+                <div><strong>Payment Method:</strong> ${receipt.payment_method}</div>
               </div>
               <div style="text-align:right;">
                 <div><strong>Date:</strong> ${new Date(receipt.timestamp).toLocaleString()}</div>
               </div>
             </div>
             <table>
-              <thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
+              <thead><tr><th>Item</th><th>Qty</th><th>Unit Price (UGX)</th><th>Subtotal (UGX)</th></tr></thead>
               <tbody>
                 ${receipt.items.map(i => `
                   <tr>
                     <td>${i.name}</td>
                     <td>${i.quantity}</td>
-                    <td>$${i.selling_price.toFixed(2)}</td>
-                    <td>$${(i.selling_price * i.quantity).toFixed(2)}</td>
+                    <td>UGX ${i.selling_price.toLocaleString()}</td>
+                    <td>UGX ${(i.selling_price * i.quantity).toLocaleString()}</td>
                   </tr>
                 `).join('')}
               </tbody>
             </table>
-            <div class="total">TOTAL: $${receipt.total.toFixed(2)}</div>
-            <div class="footer">HardwareDesk — Thank you for your business!</div>
+            <div class="total">TOTAL: UGX ${receipt.total.toLocaleString()}</div>
+            <div class="footer">HardwareDesk — Webale Nnyo / Thank you for your business!</div>
           `}
           <script>window.print(); window.close();</script>
         </body>
@@ -161,7 +160,6 @@ export default function SalesView({ onSaleComplete }) {
     `);
     printWindow.document.close();
   };
-
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
@@ -187,8 +185,6 @@ export default function SalesView({ onSaleComplete }) {
     }
     setCart([]);
   };
-
-
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -222,7 +218,6 @@ export default function SalesView({ onSaleComplete }) {
           </div>
         </div>
 
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {filteredProducts.map(p => (
             <div 
@@ -235,7 +230,7 @@ export default function SalesView({ onSaleComplete }) {
                   <h4 className="font-semibold text-gray-800 text-sm">{p.name}</h4>
                   <span className="text-xs text-gray-400 font-mono">{p.sku}</span>
                 </div>
-                <span className="font-bold text-amber-600">${p.selling_price.toFixed(2)}</span>
+                <span className="font-bold text-amber-600">UGX {p.selling_price.toLocaleString()}</span>
               </div>
               <div className="mt-2 flex justify-between items-center text-xs">
                 <span className={`font-semibold ${p.stock_quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -251,11 +246,11 @@ export default function SalesView({ onSaleComplete }) {
       </div>
 
       {/* Cart & Checkout Panel */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between h-[500px]">
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col justify-between h-[520px]">
         <div>
-          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider border-b pb-2 mb-3">Quick Sale Terminal</h2>
+          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider border-b pb-2 mb-3">Quick POS Sale (UGX)</h2>
           
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+          <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
             {cart.length === 0 ? (
               <p className="text-xs text-gray-400 text-center py-8">Cart is empty. Select products on the left.</p>
             ) : (
@@ -263,7 +258,7 @@ export default function SalesView({ onSaleComplete }) {
                 <div key={item.id} className="flex justify-between items-center bg-gray-50 p-2 rounded text-sm border border-gray-100">
                   <div>
                     <div className="font-medium text-gray-800 text-xs">{item.name}</div>
-                    <div className="text-xs text-gray-500">${item.selling_price.toFixed(2)} each</div>
+                    <div className="text-xs text-gray-500">UGX {item.selling_price.toLocaleString()} each</div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <button onClick={() => updateQuantity(item.id, -1)} className="px-2 py-0.5 bg-gray-200 rounded font-bold text-xs">-</button>
@@ -279,7 +274,7 @@ export default function SalesView({ onSaleComplete }) {
         <div className="border-t pt-3 space-y-3">
           <div className="flex justify-between items-center font-bold text-lg text-gray-900">
             <span>Total:</span>
-            <span className="text-amber-600">${totalAmount.toFixed(2)}</span>
+            <span className="text-amber-600">UGX {totalAmount.toLocaleString()}</span>
           </div>
 
           <div>
@@ -287,30 +282,30 @@ export default function SalesView({ onSaleComplete }) {
             <select 
               value={selectedCustomer} 
               onChange={e => setSelectedCustomer(e.target.value)}
-              className="w-full border rounded px-3 py-1.5 text-sm mb-2"
+              className="w-full border rounded px-3 py-1.5 text-xs mb-2"
             >
               <option value="">Walk-in Customer</option>
               {mockCustomers.map(c => (
                 <option key={c.id} value={c.id}>
-                  {c.name} {c.store_credit > 0 ? `($${c.store_credit.toFixed(2)} Store Credit)` : ''}
+                  {c.name} {c.store_credit > 0 ? `(UGX ${c.store_credit.toLocaleString()} Store Credit)` : ''}
                 </option>
               ))}
             </select>
 
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Payment Method</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">Payment Method & Network</label>
             <select 
               value={paymentMethod} 
               onChange={e => setPaymentMethod(e.target.value)}
-              className="w-full border rounded px-3 py-1.5 text-sm"
+              className="w-full border rounded px-3 py-1.5 text-xs font-semibold"
             >
-              <option value="Cash">Cash</option>
-              <option value="Mobile Money">Mobile Money</option>
-              <option value="Bank">Bank Transfer</option>
-              {availableCredit > 0 && <option value="Store Credit">Use Store Credit (${availableCredit.toFixed(2)})</option>}
-              <option value="Credit">Customer Debt Credit</option>
+              <option value="Cash">💵 Cash</option>
+              <option value="MTN Mobile Money">🟡 MTN Mobile Money (MoMo)</option>
+              <option value="Airtel Money">🔴 Airtel Money</option>
+              <option value="Bank Transfer">🏦 Bank Transfer</option>
+              {availableCredit > 0 && <option value="Store Credit">💳 Use Store Credit (UGX {availableCredit.toLocaleString()})</option>}
+              <option value="Customer Credit">📝 Customer Debt / Credit</option>
             </select>
           </div>
-
 
           <button 
             onClick={handleCheckout}
@@ -322,47 +317,44 @@ export default function SalesView({ onSaleComplete }) {
         </div>
       </div>
 
-      {/* Sale Receipt Modal */}
+      {/* Sale Complete Receipt Modal */}
       {completedSale && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-xs w-full p-5 space-y-3 text-center">
-            <h3 className="text-lg font-bold text-green-600">Sale Complete!</h3>
-            <p className="text-xs text-gray-500">Ref: {completedSale.id}</p>
-            <div className="bg-gray-50 p-3 rounded text-left space-y-1 text-xs">
-              <div className="font-semibold text-gray-700">Receipt Details:</div>
-              {completedSale.items.map(i => (
-                <div key={i.id} className="flex justify-between">
-                  <span>{i.quantity}x {i.name}</span>
-                  <span>${(i.selling_price * i.quantity).toFixed(2)}</span>
-                </div>
-              ))}
-              <div className="border-t pt-1 flex justify-between font-bold text-gray-900">
-                <span>Total:</span>
-                <span>${completedSale.total.toFixed(2)}</span>
+          <div className="bg-white rounded-lg max-w-sm w-full p-5 space-y-4 shadow-xl">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold mb-2">✓</div>
+              <h3 className="text-lg font-bold text-gray-900">Sale Completed!</h3>
+              <p className="text-xs text-gray-500 font-mono">{completedSale.id}</p>
+            </div>
+
+            <div className="border-t border-b py-2 space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Payment:</span>
+                <span className="font-semibold">{completedSale.payment_method}</span>
               </div>
-              <div className="flex justify-between text-gray-500">
-                <span>Payment:</span>
-                <span>{completedSale.payment_method}</span>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Total Amount:</span>
+                <span className="font-bold text-amber-600 text-sm">UGX {completedSale.total.toLocaleString()}</span>
               </div>
             </div>
-            <div className="flex space-x-2">
+
+            <div className="space-y-2">
               <button 
                 onClick={() => handlePrint(completedSale)}
-                className="w-1/2 py-1.5 bg-amber-500 text-slate-900 rounded text-xs font-semibold hover:bg-amber-600"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2 rounded text-xs transition flex items-center justify-center space-x-2"
               >
-                Print Receipt
+                <span>🖨 Print {receiptFormat === 'thermal' ? '80mm Receipt' : 'A4 Invoice'}</span>
               </button>
               <button 
                 onClick={() => setCompletedSale(null)}
-                className="w-1/2 py-1.5 bg-slate-900 text-white rounded text-xs font-semibold hover:bg-slate-800"
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 rounded text-xs transition"
               >
-                Close & Next
+                Close & Next Sale
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
